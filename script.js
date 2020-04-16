@@ -1,41 +1,30 @@
-let capslock = false;
-let shift = false;
-let lang = '';
+const lower = 'lower';
+const upper = 'upper';
 
-function lowercaseLetter() {
-    document.querySelectorAll('.down').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.up').forEach(el => el.classList.remove('hidden'));
-}
-
-function uppercaseLetter() {
-    document.querySelectorAll('.up').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.down').forEach(el => el.classList.remove('hidden'));
-}
-
-let container = document.createElement('div');
+const container = document.createElement('div');
 container.className = 'container';
 document.body.append(container);
 
-let title = document.createElement('h1');
+const title = document.createElement('h1');
 title.className = 'title';
 title.textContent = 'Virtual Keybord';
 container.append(title);
 
-let subtitleOS = document.createElement('p');
+const subtitleOS = document.createElement('p');
 subtitleOS.className = 'subtitle';
 subtitleOS.textContent = 'Клавиатура создана в операционной системе Windows';
 container.append(subtitleOS);
 
-let subtitleLang = document.createElement('p');
+const subtitleLang = document.createElement('p');
 subtitleLang.className = 'subtitle';
 subtitleLang.textContent = 'Для переключения языка комбинация: левыe ctrl + alt';
 container.append(subtitleLang);
 
-let textarea = document.createElement('textarea');
+const textarea = document.createElement('textarea');
 textarea.className = 'textarea';
 container.append(textarea);
 
-let keyBord = document.createElement('div');
+const keyBord = document.createElement('div');
 keyBord.className = 'keybord';
 container.append(keyBord);
 
@@ -106,6 +95,23 @@ const keyLayout = {
     "ControlRight" : new Array(4).fill('Ctrl'),
 };
 
+
+let capslock = false;
+let shift = false;
+let lang = '';
+
+
+function setCase(lettercase) {
+    if (lettercase === lower) {
+        document.querySelectorAll('.down').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.up').forEach(el => el.classList.remove('hidden'));
+    } else if (lettercase === upper) {
+        document.querySelectorAll('.up').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.down').forEach(el => el.classList.remove('hidden'));
+    }
+}
+
+
 for (let key in keyLayout) {
     let div = document.createElement('div');
     div.className = 'key';
@@ -114,12 +120,13 @@ for (let key in keyLayout) {
     document.querySelector('.keybord').append(div);
 }
 
-if (localStorage.lang === undefined) {
+let currentLang = localStorage.getItem('lang');
+if (currentLang === null) {
     lang = 'en';
     checkLang();
     checkCapslock();
 } else {
-    lang = localStorage.lang;
+    lang = currentLang;
 }
 
 function checkLang() {
@@ -144,17 +151,20 @@ checkCapslock();
 function changeLang() {
     if (lang === 'en') {
         lang = 'ru';
-        localStorage.lang = 'ru';
+        localStorage.setItem('lang','ru');
     } else {
         lang = 'en';
-        localStorage.lang = 'en';
+        localStorage.setItem('lang','en');
     }
 
     checkLang();
     checkCapslock();
 }
 
-function runOnKeys(func, ...codes) {
+const runOnKeys = (function () {
+    const func = changeLang;
+    const codes = ["ControlLeft",
+    "AltLeft"];
     let pressed = new Set();
 
     document.addEventListener('keydown', function(event) {
@@ -172,20 +182,16 @@ function runOnKeys(func, ...codes) {
     document.addEventListener('keyup', function(event) {
       pressed.delete(event.code);
     });
-}
+})();
 
-runOnKeys(
-    changeLang,
-    "ControlLeft",
-    "AltLeft"
-  );
+runOnKeys;
 
 function checkCapslock() {
-    if (capslock == false) {
-        lowercaseLetter();
+    if (!capslock) {
+        setCase(lower);
         document.querySelector('#CapsLock').classList.remove('press-key');
-    } else if (capslock == true) {
-        uppercaseLetter();
+    } else {
+        setCase(upper);
         document.querySelector('#CapsLock').classList.add('press-key');
     }
 }
@@ -193,7 +199,7 @@ checkCapslock();
 
 document.addEventListener('keydown', function(event) {
     if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
-        uppercaseLetter();
+        setCase(upper);
         shift = true;
     } 
 });
@@ -201,21 +207,21 @@ document.addEventListener('keydown', function(event) {
 document.addEventListener('keyup', function(event) {
     if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') {
         if (capslock === false) {
-            lowercaseLetter();
+            setCase(lower);
         }
         shift = false;
     }
 });
 
 
-document.querySelector('#ShiftLeft').addEventListener('mousedown', uppercaseLetter);
+document.querySelector('#ShiftLeft').addEventListener('mousedown', () => { setCase(upper) });
 document.querySelector('#ShiftLeft').addEventListener('mouseup', () => {
-    if (capslock === false) { lowercaseLetter(); }
+    if (capslock === false) { setCase(lower); }
 });
 
-document.querySelector('#ShiftRight').addEventListener('mousedown', uppercaseLetter);
+document.querySelector('#ShiftRight').addEventListener('mousedown', () => { setCase(upper) });
 document.querySelector('#ShiftRight').addEventListener('mouseup', () => {
-    if (capslock === false) { lowercaseLetter(); }
+    if (capslock === false) { setCase(lower); }
 });
 
 
@@ -254,6 +260,27 @@ keyBord.addEventListener('mouseup', function(event) {
     } 
 });
 
+let clickedButton = '';
+let clickedShift = false;
+
+document.addEventListener('mousedown', function(event) {
+   clickedButton = event.target.closest('div').id;
+   if (clickedButton === 'ShiftLeft' || clickedButton === 'ShiftRight'){
+       clickedShift = true;
+   } else {
+       clickedShift = false;
+   }   
+});
+
+document.addEventListener('mouseup', function(event) {
+    clickedButton = event.target.closest('div').id;
+    if (clickedButton === 'ShiftLeft' || clickedButton === 'ShiftRight'){
+        clickedShift = false;
+    } else {
+        clickedShift = true;
+    }   
+ });
+
 function paste(key) {
     textarea.setRangeText(key, textarea.selectionStart, textarea.selectionEnd, "end");
 }
@@ -290,7 +317,7 @@ function printKey(el) {
             paste('\n');
             break;
         case el.id === 'CapsLock':
-            capslock = capslock === false ? true : false;
+            capslock = !capslock;
             checkCapslock();
             break;
         case el.id === 'ControlLeft':
@@ -303,6 +330,7 @@ function printKey(el) {
             break;
         case lang === 'en' && capslock === true:
         case lang === 'en' && shift === true:
+        case lang === 'en' && clickedShift === true:
             paste(el.textContent[0]);
             break;
         case lang === 'en' && capslock === false:
@@ -310,6 +338,7 @@ function printKey(el) {
             break;
         case lang === 'ru' && capslock === true:
         case lang === 'ru' && shift === true:
+        case lang === 'ru' && clickedShift === true:
             paste(el.textContent[2]);
             break;
         case lang === 'ru' && capslock === false:
